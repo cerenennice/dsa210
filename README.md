@@ -10,9 +10,9 @@ The dataset contains various aspects of Netflix viewing activity, including clic
 ## **Project Goals**
 The primary objective of this project is to analyze Netflix viewing data to uncover patterns in entertainment consumption. The key goals include:
 
-- **Identifying** peak viewing times across different days and months.
-- **Comparing** weekday and weekend viewing habits.
-- **Detecting** seasonal trends in content consumption.
-- **Understanding** device usage and profile-based viewing behaviors.
+- Identifying peak viewing times across different days and months.
+- Comparing weekday and weekend viewing habits.
+- Detecting seasonal trends in content consumption.
+- Understanding device usage and profile-based viewing behaviors.
 
 By examining these trends, this analysis aims to enhance the understanding of family entertainment routines and preferences.
