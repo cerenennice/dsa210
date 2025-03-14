@@ -1,5 +1,5 @@
 # Dsa210
-# **Understanding Viewing Patterns on Streaming Platforms**
+# **Understanding Viewing Patterns on Netflix Platform**
 
 ## **Introduction**
 Understanding viewing patterns on streaming platforms provides valuable insights into entertainment preferences and daily routines. Analyzing Netflix viewing data from my family allows for an in-depth exploration of entertainment choices, routines, and habits. This study aims to identify peak viewing times, compare weekday and weekend behaviors, and uncover seasonal trends in content consumption.
