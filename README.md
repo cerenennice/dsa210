@@ -6,6 +6,8 @@ Understanding viewing patterns on streaming platforms provides valuable insights
 
 ## **Dataset Description**
 The dataset contains various aspects of Netflix viewing activity, including clickstream logs, content interactions, user profiles, devices used for streaming, IP addresses, and engagement with Netflix's gaming content. Clickstream and content interaction data reveal details about what was watched, paused, or skipped, while profile information helps differentiate viewing habits among users. Additionally, device and IP address records provide insights into how and where content is accessed, contributing to a more comprehensive understanding of streaming behavior. All tables come from Netflix’s GDPR-compliant “Download your personal information” portal. After logging into my account I navigated to Account -> Privacy & Data -> Download your personal information, submitted a request, and received a ZIP file by e-mail a few days later. 
+
+
 **Structure of the delivery**
 • ACCOUNT/AccessAndDevices.csv – every device that has logged in, with Devices, Date, unique ESN and a “Part of household” flag.
 • CLICKSTREAM/Clickstream.csv – Web clicks: Profile Name, Source, Navigation Level, referrer/target URLs and Click Utc Ts.
@@ -15,6 +17,8 @@ The dataset contains various aspects of Netflix viewing activity, including clic
 • GAMES/GamePlaySession.csv – start time, length, title and platform for Netflix Games sessions.
 • IP_ADDRESSES/… – IP blocks for log-ins and streaming events, plus coarse location strings.
 • Auxiliary files (Ratings.csv, SearchHistory.csv, InteractiveTitles.csv, etc.) add thumbs-up ratings, free-text searches and interactive-film choices.
+
+
 
 **Variable highlights**
 • Profile Name (string) – logical viewer; five adult profiles in this export.
