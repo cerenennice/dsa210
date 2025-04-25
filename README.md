@@ -20,5 +20,6 @@ By examining these trends, this analysis aims to enhance the understanding of fa
 ## **Hypothesis Testing**
 
 H0: There is no significant difference in the average viewing time per person between weekdays and weekends.
+
 H1: There is a significant difference in the average viewing time per person between weekdays and weekends.
 
