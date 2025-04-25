@@ -16,3 +16,9 @@ The primary objective of this project is to analyze Netflix viewing data to unco
 - Understanding device usage and profile-based viewing behaviors.
 
 By examining these trends, this analysis aims to enhance the understanding of family entertainment routines and preferences.
+
+## **Hypothesis Testing**
+
+H0: There is no significant difference in the average viewing time per person between weekdays and weekends.
+H1: There is a significant difference in the average viewing time per person between weekdays and weekends.
+
