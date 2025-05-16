@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Netflix Viewing Patterns Analysis</title>
+  <style>
+    :root {
+      --bg: #f9f9f9;
+      --card: #ffffff;
+      --text: #333;
+      --accent: #0066cc;
+      --gap: 1.5rem;
+      --radius: 8px;
+      --shadow: rgba(0,0,0,0.1) 0px 4px 12px;
+      --code-bg: #272822;
+      --code-text: #f8f8f2;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0; padding: 0;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', sans-serif;
+      line-height: 1.6;
+      padding: var(--gap);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: var(--gap);
+      color: var(--accent);
+    }
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    section {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: var(--gap);
+      margin-bottom: var(--gap);
+    }
+    section h2 {
+      margin-bottom: 0.5rem;
+      color: var(--accent);
+    }
+    section img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: var(--radius);
+      margin: 0.5rem 0;
+    }
+    section p {
+      font-size: 0.95rem;
+    }
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 1rem;
+      overflow-x: auto;
+      border-radius: var(--radius);
+      font-size: 0.85rem;
+      line-height: 1.4;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Netflix Viewing Patterns Analysis</h1>
+  <main>
+
+    <section id="data-preparation">
+      <h2>0. Data Preparation & Aggregations</h2>
+      <pre><code>
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import stats
+
+devices_df = pd.read_csv('netflix-report/ACCOUNT/AccessAndDevices.csv')
+clickstream_df = pd.read_csv('netflix-report/CLICKSTREAM/Clickstream.csv')
+viewing_df = pd.read_csv('netflix-report/CONTENT_INTERACTION/ViewingActivity.csv', on_bad_lines='skip')
+profiles_df = pd.read_csv('netflix-report/PROFILES/Profiles.csv')
+device_meta_df = pd.read_csv('netflix-report/DEVICES/Devices.csv')
+
+viewing_df = viewing_df[['Profile Name', 'Start Time', 'Duration', 'Device Type', 'Title']]
+clickstream_df = clickstream_df[['Profile Name', 'Click Utc Ts', 'Webpage Url']]
+
+viewing_df['Start Time'] = pd.to_datetime(viewing_df['Start Time'])
+clickstream_df['Click Utc Ts'] = pd.to_datetime(clickstream_df['Click Utc Ts'])
+
+devices_df['Date'] = pd.to_datetime(devices_df['Date'])
+
+merged = viewing_df.merge(profiles_df[['Profile Name', 'Date Of Birth']], on='Profile Name', how='left')
+
+merged = merged.merge(device_meta_df[['Profile Name', 'Device Type', 'Profile First Playback Date']],
+                      on=['Profile Name', 'Device Type'], how='left')
+
+clickstream_df = clickstream_df.sort_values(['Profile Name', 'Click Utc Ts'])
+merged = merged.sort_values(['Profile Name', 'Start Time'])
+
+merged['hour'] = merged['Start Time'].dt.hour
+merged['day_of_week'] = merged['Start Time'].dt.day_name()
+merged['month'] = merged['Start Time'].dt.month_name()
+merged['is_weekend'] = merged['day_of_week'].isin(['Saturday', 'Sunday'])
+
+def to_seconds(x):
+    try:
+        h, m, s = x.split(':')
+        return int(h)*3600 + int(m)*60 + int(s)
+    except:
+        return np.nan
+
+merged['duration_sec'] = merged['Duration'].astype(str).apply(to_seconds)
+
+merged = merged.dropna(subset=['Start Time', 'Duration', 'duration_sec'])
+
+
+hourly = merged.groupby('hour')['duration_sec'].sum().reset_index()
+
+user_hourly = merged.groupby(['Profile Name', 'hour'])['duration_sec'].sum().reset_index()
+
+device_hourly = merged.groupby(['Device Type', 'hour'])['duration_sec'].sum().reset_index()
+
+weekagg = merged.groupby('is_weekend')['duration_sec'].agg(['sum','mean','count']).reset_index()
+
+monthly = merged.groupby('month')['duration_sec'].sum().reindex(
+    ['January','February','March','April','May','June','July','August','September','October','November','December']
+).dropna().reset_index()
+
+profile_device = merged.groupby(['Profile Name','Device Type'])['duration_sec'].sum().reset_index()
+
+user_totals = merged.groupby('Profile Name')['duration_sec'].sum().reset_index()
+
+device_totals = merged.groupby('Device Type')['duration_sec'].sum().reset_index()
+
+
+      </code></pre>
+      <p>
+        These steps load the Netflix data, clean and merge tables, convert duration strings to seconds,
+        and build summary tables that each graph will use. Nothing is plotted yet
+        the code just prepares the data.
+      </p>
+    </section>
+
+    <section id="hourly-overall">
+      <h2>1. Viewing Time by Hour of Day</h2>
+      <pre><code>
+plt.figure()
+plt.plot(hourly['hour'], hourly['duration_sec'], marker='o')
+plt.title('Viewing Time by Hour of Day')
+plt.xlabel('Hour')
+plt.ylabel('Total Seconds Viewed')
+plt.grid(True)
+plt.show()
+      </code></pre>
+      <img src="images/viewing_by_hour.png" alt="Viewing Time by Hour of Day">
+      <p>
+        • People watch the least between 2 a.m. and 5 a.m.<br/>
+        • Watching grows fast after 6 a.m. and stays high until night.<br/>
+        • The biggest peak is around 1 – 2 p.m.; a smaller bump appears near 8 – 10 p.m.<br/>
+        • Very late at night (11 p.m.–midnight) the numbers drop again.
+      </p>
+    </section>
+
+    <section id="weekday-vs-weekend-total">
+      <h2>2. Total Viewing: Weekday vs Weekend</h2>
+      <pre><code>
+plt.figure()
+plt.bar(['Weekday','Weekend'], weekagg['sum'])
+plt.title('Total Viewing: Weekday vs Weekend')
+plt.ylabel('Seconds Viewed')
+plt.show()
+      </code></pre>
+      <img src="images/weekday_vs_weekend_total.png" alt="Total Viewing Weekday vs Weekend">
+      <p>
+        • Weekdays add up to about twice as many seconds as weekends.<br/>
+        • So, most viewing still happens Monday–Friday.
+      </p>
+    </section>
+
+    <section id="weekday-vs-weekend-average">
+      <h2>3. Average Viewing per Day: Weekday vs Weekend</h2>
+      <pre><code>
+plt.figure()
+plt.bar(['Weekday','Weekend'], weekagg['mean'])
+plt.title('Average Viewing: Weekday vs Weekend')
+plt.ylabel('Seconds Viewed')
+plt.show()
+      </code></pre>
+      <img src="images/weekday_vs_weekend_avg.png" alt="Average Viewing Weekday vs Weekend">
+      <p>
+        • A single weekday and a single weekend day look almost the same (~650 s).<br/>
+        • The higher total on weekdays is only because there are five weekdays vs two weekend days.
+      </p>
+    </section>
+
+    <section id="monthly-trend">
+      <h2>4. Monthly Viewing Time</h2>
+      <pre><code>
+plt.figure()
+plt.plot(monthly['month'], monthly['duration_sec'], marker='o')
+plt.title('Monthly Viewing Time')
+plt.xlabel('Month')
+plt.ylabel('Total Seconds Viewed')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+      </code></pre>
+      <img src="images/monthly_trend.png" alt="Monthly Viewing Time">
+      <p>
+        • January is the top month; March also stays high.<br/>
+        • Viewing falls in May and is lowest in October.<br/>
+        • It rises again in November and December.<br/>
+        • This hints at more free time in winter and less in late spring/early autumn.
+      </p>
+    </section>
+
+    <section id="by-profile-total">
+      <h2>5. Total Viewing Time by Profile</h2>
+      <pre><code>
+plt.figure()
+plt.bar(
+    user_totals['Profile Name'],
+    user_totals['duration_sec']
+)
+plt.title('Total Viewing Time by Profile')
+plt.xlabel('Profile Name')
+plt.ylabel('Total Seconds Viewed')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+      </code></pre>
+      <img src="images/total_by_profile.png" alt="Total Viewing Time by Profile">
+      <p>
+        • Ceren watches the most—far more than anyone else.<br/>
+        • Begüm:) and Televizyon are mid‑range.<br/>
+        • Hülya watches some but not a lot.<br/>
+        • Nuh watches almost nothing.
+      </p>
+    </section>
+
+    <section id="hourly-by-profile">
+      <h2>6. Hourly Viewing Time per Profile</h2>
+      <pre><code>
+plt.figure(figsize=(12,6))
+for name, grp in user_hourly.groupby('Profile Name'):
+    plt.plot(grp['hour'], grp['duration_sec'], marker='o', label=name)
+plt.title('Hourly Viewing Time per Profile')
+plt.xlabel('Hour')
+plt.ylabel('Seconds Viewed')
+plt.legend()
+plt.grid(True)
+plt.show()
+      </code></pre>
+      <img src="images/hourly_by_profile.png" alt="Hourly Viewing Time per Profile">
+      <p>
+        • Ceren is active almost all day, with big spikes at lunch and late evening.<br/>
+        • Begüm:) mainly watches after 6 p.m., peaking around 8–9 p.m.<br/>
+        • Hülya and Televizyon watch in the late morning and early afternoon.<br/>
+        • Nuh stays near zero at every hour.
+      </p>
+    </section>
+
+    <section id="hourly-by-device">
+      <h2>7. Hourly Viewing Time per Device Type</h2>
+      <pre><code>
+plt.figure(figsize=(12,6))
+for dev, grp in device_hourly.groupby('Device Type'):
+    plt.plot(grp['hour'], grp['duration_sec'], marker='o', label=dev)
+plt.title('Hourly Viewing Time per Device Type')
+plt.xlabel('Hour')
+plt.ylabel('Seconds Viewed')
+plt.legend()
+plt.grid(True)
+plt.show()
+      </code></pre>
+      <img src="images/hourly_by_device.png" alt="Hourly Viewing Time per Device Type">
+      <p>
+        • Safari MAC dominates; usage climbs through the day and peaks late at night.<br/>
+        • Chrome PC and Sony Smart TV rise from morning, peaking around 7–8 p.m.<br/>
+        • Phones (iPhone 14 Pro Max, iPhone X) show steady use, mostly evenings.<br/>
+        • Consoles and other browsers stay low all day.
+      </p>
+    </section>
+
+    <section id="hypotesis-testing">
+      <h2>8. Hyphotesis Testing</h2>
+      <pre><code>
+from scipy.stats import ttest_rel
+
+pivoted = user_week_part.pivot(index='Profile Name', columns='is_weekend', values='duration_sec')
+
+pivoted.columns = ['weekday_hours', 'weekend_hours']
+
+pivoted = pivoted.dropna()
+
+pivoted = pivoted / 3600
+
+weekday_hours = pivoted['weekday_hours'].tolist()
+weekend_hours = pivoted['weekend_hours'].tolist()
+
+t_stat, p_value_two_sided = ttest_rel(weekend_hours, weekday_hours)
+
+if t_stat > 0:
+    p_value = p_value_two_sided / 2
+else:
+    p_value = 1 - (p_value_two_sided / 2)
+
+print("p-value:", p_value)
+
+winter_months = ['December', 'January', 'February']
+summer_months = ['June', 'July', 'August']
+
+merged['season'] = merged['month'].apply(
+    lambda x: 'winter' if x in winter_months else ('summer' if x in summer_months else 'other')
+)
+
+user_season = merged[merged['season'].isin(['winter', 'summer'])].groupby(
+    ['Profile Name', 'season']
+)['duration_sec'].mean().reset_index()
+
+pivoted = user_season.pivot(index='Profile Name', columns='season', values='duration_sec')
+pivoted = pivoted.dropna()
+pivoted = pivoted / 3600
+
+from scipy.stats import ttest_rel
+import numpy as np
+
+winter_hours = pivoted['winter'].tolist()
+summer_hours = pivoted['summer'].tolist()
+
+t_stat, p_val_two_sided = ttest_rel(winter_hours, summer_hours)
+
+# One-sided test: you expect winter > summer
+if t_stat > 0:
+    p_value = p_val_two_sided / 2
+else:
+    p_value = 1 - (p_val_two_sided / 2)
+
+print("p-value:", p_value)
+      </code></pre>
+    <p>
+      The hypothesis tests for both increased weekend viewing and increased winter viewing did not yield statistically significant results. The p-value for weekend vs. weekday viewing was approximately 0.186, and for winter vs. summer viewing, it was about 0.161 — both above the commonly used significance threshold of 0.05. This means that, based on the data, we do not have strong enough evidence to conclude that users watch significantly more on weekends or during winter months. While there may be a trend toward increased viewing during these periods, the observed differences could also be due to random variation in user behavior.
+    </p>
+    </section>
+
+  </main>
+</body>
+</html>
+
