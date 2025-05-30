@@ -39,5 +39,8 @@ The primary objective of this project is to analyze Netflix viewing data to unco
 By examining these trends, this analysis aims to enhance the understanding of family entertainment routines and preferences.
 
 ## **Hypothesis Testing**
-•
-•
+• Null Hypothesis (H₀): The average viewing time on weekends is equal to the average viewing time on weekdays.
+• Alternative Hypothesis (H₁): The average viewing time on weekends is different from the average viewing time on weekdays.
+• Null Hypothesis (H₀): The average viewing time in winter is equal to the average viewing time in summer. 
+• Alternative Hypothesis (H₁): The average viewing time in winter is different from the average viewing time in summer.
+
